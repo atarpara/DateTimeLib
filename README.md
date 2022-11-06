@@ -16,7 +16,7 @@ timestamp      | >= 0                          | Unix timestamp, number of secon
 month          | 1 ... 12                      |
 day            | 1 ... 31                      |
 Weekday        | 0 ... 6                       | 0 = Monday, ..., 6 = Sunday
-year/month/day | 1970/01/01 . 3.66*10^69/12/31 |
+year/month/day | 1970/01/01 ... 3.66*10^69/12/31 |
 
 All functions operate on the `uint256` timestamp data type.
 

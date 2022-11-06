@@ -80,7 +80,10 @@ contract DateTimeLibTest is TestPlus {
     function testFuzzDaysFromDate(uint256 _y, uint256 _m, uint256 _d) public {
         // MAX POSSIBLE DAY = 115792089237316195423570985008687907853269984665640564039457584007913128920467
         // MAX DATE = 317027972476686572410305440929486321699336700043506886628630523577932824465 - 12 - 03
-        vm.assume(DateTimeLib.isValidDate(_y, _m, _d));
+        _y = _bound(_y, 1970, 3669305236998687180674831492239425019668248843096144521164705134005821);
+        _m = _bound(_m, 1, 12);
+        uint256 md = DateTimeLib.getDaysInMonth(_y,_m);
+        _d = _bound(_d,1,md);
         uint256 day = DateTimeLib.daysFromDate(_y, _m, _d);
         (uint256 y, uint256 m, uint256 d) = DateTimeLib.daysToDate(day);
         assertTrue(_y == y && _m == m && _d == d);
@@ -195,7 +198,7 @@ contract DateTimeLibTest is TestPlus {
     }
 
     function testFuzzIsValidDate(uint256 y, uint256 m, uint256 d) public {
-        if (y > 1969 && y < 317027972476686572410305440929486321699336700043506886628630523577932824464) {
+        if (y > 1969 && y < 3669305236998687180674831492239425019668248843096144521164705134005822) {
             if (m > 0 && m < 13 && d > 0 && d < DateTimeLib.getDaysInMonth(y, m)) {
                 assertTrue(DateTimeLib.isValidDate(y, m, d));
             }
