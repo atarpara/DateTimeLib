@@ -8,7 +8,7 @@ library DateTimeLib {
 
     uint256 constant PER_DAY_SECOND = 86400;
 
-    /// @dev Returns days from 1970-01-01 to y-m-d using
+    /// @dev Returns days from 1970-01-01 to yyyy-mm-dd using
     /// date conversion algorithm from
     /// https://howardhinnant.github.io/date_algorithms.html
     /// @notice doesn't validate date if date is before 1970-1-1 then this will give undefined behaviour
@@ -18,6 +18,7 @@ library DateTimeLib {
         assembly {
             y := sub(y, lt(m, 3))
             // (153*mp + 2)/5 equivalent (62719*mp + 769 / 2048)
+            // mp = (m + 9) % 12
             let doy := add(shr(11, add(mul(62719, mod(add(m, 9), 12)), 769)), d)
             let yoe := mod(y, 400)
             let doe := sub(add(add(mul(yoe, 365), shr(2, yoe)), doy), div(yoe, 100))
@@ -49,8 +50,8 @@ library DateTimeLib {
         }
     }
 
-    /// @dev Returns unix timestamp from given yyyy-m-d
-    /// @notice doesn't validate date if date is before 1970-1-1 then this will give undefined behaviour
+    /// @dev Returns unix timestamp from given yyyy-mm-dd
+    /// @notice doesn't validate date if date is before 1970-01-01 then this will give undefined behaviour
     /// you can validate date by isValidDate function
     function timestampFromDate(uint256 y, uint256 m, uint256 d) internal pure returns (uint256 timestamp) {
         return daysFromDate(y, m, d) * PER_DAY_SECOND;
@@ -62,7 +63,7 @@ library DateTimeLib {
     }
 
     /// @dev Returns number of days in given month of year
-    function monthDays(uint256 y, uint256 m) internal pure returns (uint256 d) {
+    function getDaysInMonth(uint256 y, uint256 m) internal pure returns (uint256 d) {
         bool flag = isLeapYear(y);
         /// @solidity memory-safe-assembly
         assembly {
@@ -74,7 +75,7 @@ library DateTimeLib {
 
     /// @dev Returns Week Day of given timestamp
     /// Monday - 0, Tuesday - 1, ....., Sunday - 6
-    function getWeekDay(uint256 t) internal pure returns (uint256 weekday) {
+    function getDayOfWeek(uint256 t) internal pure returns (uint256 weekday) {
         /// @solidity memory-safe-assembly
         assembly {
             weekday := mod(add(div(t, PER_DAY_SECOND), 3), 7)
@@ -82,9 +83,9 @@ library DateTimeLib {
     }
 
     /// @dev Returns If given date is valid else false
-    /// valid range 1970 < year < 3.669*10^69, 0 < month < 13, 0 < day <= monthDays(y,m)
+    /// valid range 1970 < year < 3.669*10^69, 0 < month < 13, 0 < day <= getDaysInMonth(y,m)
     function isValidDate(uint256 y, uint256 m, uint256 d) internal pure returns (bool valid) {
-        uint256 md = monthDays(y, m);
+        uint256 md = getDaysInMonth(y, m);
         /// @solidity memory-safe-assembly
         assembly {
             // prettier-ignore
@@ -96,11 +97,11 @@ library DateTimeLib {
 
     /// @dev Returns timestamp If the given nth weekday in month of year is possible else zero
     /// @dev wd range is must be [0,6] where 0-Monday, 1-Tuesday,...., 6-Sunday else undefined behaviours
-    /// (Example) 2022-2 3th friday (getNthDayInMonthOfYear(2022,2,3,5))
+    /// (Example) 2022-2 3th friday (getNthDayOfWeekInMonthOfYear(2022,2,3,5))
     /// @notice Doesn't verify year,month and weekday(wd) you can verify this via isValidDate(y,m,1)
-    function getNthDayInMonthOfYear(uint256 y, uint256 m, uint256 n, uint256 wd) internal pure returns (uint256 t) {
+    function getNthDayOfWeekInMonthOfYear(uint256 y, uint256 m, uint256 n, uint256 wd) internal pure returns (uint256 t) {
         uint256 d = daysFromDate(y, m, 1);
-        uint256 md = monthDays(y, m);
+        uint256 md = getDaysInMonth(y, m);
         assembly {
             // weekday of 01-mm-yyyy w0 = (d + 3) % 7
             // weekday diffrence x = (wd - w0) , x = x <= 6 ? x : x + 7
@@ -108,7 +109,7 @@ library DateTimeLib {
             // date = diff + (n-1)*7 + 1
             // timestamp = 86400 * ((date - 1) + d) -> optimize ( 86400 * (diff + (n-1)*7) + d)
             let date := add(mul(sub(n, 1), 7), add(mul(gt(diff, 6), 7), diff))
-            // timestamp = date > monthdays(y,m) ? 0 : (date + d)*86400
+            // timestamp = date > getDaysInMonth(y,m) ? 0 : (date + d)*86400
             t := mul(mul(mul(PER_DAY_SECOND, add(date, d)), lt(date, md)), iszero(iszero(n)))
         }
     }

@@ -108,54 +108,54 @@ contract DateTimeLibTest is TestPlus {
         }
     }
 
-    function testMonthDays() public {
-        assertEq(DateTimeLib.monthDays(2022, 1), 31);
-        assertEq(DateTimeLib.monthDays(2022, 2), 28);
-        assertEq(DateTimeLib.monthDays(2022, 3), 31);
-        assertEq(DateTimeLib.monthDays(2022, 4), 30);
-        assertEq(DateTimeLib.monthDays(2022, 5), 31);
-        assertEq(DateTimeLib.monthDays(2022, 6), 30);
-        assertEq(DateTimeLib.monthDays(2022, 7), 31);
-        assertEq(DateTimeLib.monthDays(2022, 8), 31);
-        assertEq(DateTimeLib.monthDays(2022, 9), 30);
-        assertEq(DateTimeLib.monthDays(2022, 10), 31);
-        assertEq(DateTimeLib.monthDays(2022, 11), 30);
-        assertEq(DateTimeLib.monthDays(2022, 12), 31);
-        assertEq(DateTimeLib.monthDays(2024, 1), 31);
-        assertEq(DateTimeLib.monthDays(2024, 2), 29);
-        assertEq(DateTimeLib.monthDays(1900, 2), 28);
+    function testgetDaysInMonth() public {
+        assertEq(DateTimeLib.getDaysInMonth(2022, 1), 31);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 2), 28);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 3), 31);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 4), 30);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 5), 31);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 6), 30);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 7), 31);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 8), 31);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 9), 30);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 10), 31);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 11), 30);
+        assertEq(DateTimeLib.getDaysInMonth(2022, 12), 31);
+        assertEq(DateTimeLib.getDaysInMonth(2024, 1), 31);
+        assertEq(DateTimeLib.getDaysInMonth(2024, 2), 29);
+        assertEq(DateTimeLib.getDaysInMonth(1900, 2), 28);
     }
 
-    function testFuzzMonthDays(uint256 y, uint256 m) public {
+    function testFuzzgetDaysInMonth(uint256 y, uint256 m) public {
         m = _bound(m, 1, 12);
         if (DateTimeLib.isLeapYear(y) && m == 2) {
-            assertEq(DateTimeLib.monthDays(y, m), 29);
+            assertEq(DateTimeLib.getDaysInMonth(y, m), 29);
         } else if (m == 1 || m == 3 || m == 5 || m == 7 || m == 8 || m == 10 || m == 12) {
-            assertEq(DateTimeLib.monthDays(y, m), 31);
+            assertEq(DateTimeLib.getDaysInMonth(y, m), 31);
         } else if (m == 2) {
-            assertEq(DateTimeLib.monthDays(y, m), 28);
+            assertEq(DateTimeLib.getDaysInMonth(y, m), 28);
         } else {
-            assertEq(DateTimeLib.monthDays(y, m), 30);
+            assertEq(DateTimeLib.getDaysInMonth(y, m), 30);
         }
     }
 
-    function testGetWeekDay() public {
-        assertEq(DateTimeLib.getWeekDay(1), 3);
-        assertEq(DateTimeLib.getWeekDay(86400), 4);
-        assertEq(DateTimeLib.getWeekDay(86401), 4);
-        assertEq(DateTimeLib.getWeekDay(172800), 5);
-        assertEq(DateTimeLib.getWeekDay(259200), 6);
-        assertEq(DateTimeLib.getWeekDay(345600), 0);
-        assertEq(DateTimeLib.getWeekDay(432000), 1);
-        assertEq(DateTimeLib.getWeekDay(518400), 2);
+    function testgetDayOfWeek() public {
+        assertEq(DateTimeLib.getDayOfWeek(1), 3);
+        assertEq(DateTimeLib.getDayOfWeek(86400), 4);
+        assertEq(DateTimeLib.getDayOfWeek(86401), 4);
+        assertEq(DateTimeLib.getDayOfWeek(172800), 5);
+        assertEq(DateTimeLib.getDayOfWeek(259200), 6);
+        assertEq(DateTimeLib.getDayOfWeek(345600), 0);
+        assertEq(DateTimeLib.getDayOfWeek(432000), 1);
+        assertEq(DateTimeLib.getDayOfWeek(518400), 2);
     }
 
-    function testFuzzGetWeekDay() public {
+    function testFuzzgetDayOfWeek() public {
         uint256 t = 0;
         uint256 wd = 3;
         unchecked {
             for (uint256 i = 0; i < 1000; ++i) {
-                assertEq(DateTimeLib.getWeekDay(t), wd);
+                assertEq(DateTimeLib.getDayOfWeek(t), wd);
                 t += 86400;
                 wd = (wd + 1) % 7;
             }
@@ -196,7 +196,7 @@ contract DateTimeLibTest is TestPlus {
 
     function testFuzzIsValidDate(uint256 y, uint256 m, uint256 d) public {
         if (y > 1969 && y < 317027972476686572410305440929486321699336700043506886628630523577932824464) {
-            if (m > 0 && m < 13 && d > 0 && d < DateTimeLib.monthDays(y, m)) {
+            if (m > 0 && m < 13 && d > 0 && d < DateTimeLib.getDaysInMonth(y, m)) {
                 assertTrue(DateTimeLib.isValidDate(y, m, d));
             }
         } else {
@@ -204,46 +204,46 @@ contract DateTimeLibTest is TestPlus {
         }
     }
 
-    function testGetNthDayInMonthOfYear() public {
+    function testgetNthDayOfWeekInMonthOfYear() public {
         // get 1st 2nd 3rd 4th monday in Novermber 2022
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 1, 0), 1667779200);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 2, 0), 1668384000);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 3, 0), 1668988800);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 4, 0), 1669593600);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 5, 0), 0);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 1, 0), 1667779200);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 2, 0), 1668384000);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 3, 0), 1668988800);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 4, 0), 1669593600);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 5, 0), 0);
 
         // get 1st... 5th Wednesday in Novermber 2022
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 1, 2), 1667347200);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 2, 2), 1667952000);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 3, 2), 1668556800);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 4, 2), 1669161600);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 5, 2), 1669766400);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 11, 6, 2), 0);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 1, 2), 1667347200);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 2, 2), 1667952000);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 3, 2), 1668556800);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 4, 2), 1669161600);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 5, 2), 1669766400);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 11, 6, 2), 0);
 
         // get 1st... 5th Friday in December 2022
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 12, 1, 4), 1669939200);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 12, 2, 4), 1670544000);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 12, 3, 4), 1671148800);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 12, 4, 4), 1671753600);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 12, 5, 4), 1672358400);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022, 12, 6, 4), 0);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 12, 1, 4), 1669939200);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 12, 2, 4), 1670544000);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 12, 3, 4), 1671148800);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 12, 4, 4), 1671753600);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 12, 5, 4), 1672358400);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2022, 12, 6, 4), 0);
 
         // get 1st... 5th Sunday in January 2023
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023, 1, 1, 6), 1672531200);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023, 1, 2, 6), 1673136000);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023, 1, 3, 6), 1673740800);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023, 1, 4, 6), 1674345600);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023, 1, 5, 6), 1674950400);
-        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023, 1, 6, 6), 0);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2023, 1, 1, 6), 1672531200);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2023, 1, 2, 6), 1673136000);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2023, 1, 3, 6), 1673740800);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2023, 1, 4, 6), 1674345600);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2023, 1, 5, 6), 1674950400);
+        assertEq(DateTimeLib.getNthDayOfWeekInMonthOfYear(2023, 1, 6, 6), 0);
     }
 
-    function testFuzzGetNthDayInMonthOfYear(uint256 year, uint256 month, uint256 n, uint256 wd) public {
+    function testFuzzgetNthDayOfWeekInMonthOfYear(uint256 year, uint256 month, uint256 n, uint256 wd) public {
         wd = _bound(wd, 0, 6);
         month = _bound(month, 1, 12);
 
         year = _bound(year, 1970, 3669305236998687180674831492239425019668248843096144521164705134005821);
         console.log(month, year);
-        uint256 t = DateTimeLib.getNthDayInMonthOfYear(year, month, n, wd);
+        uint256 t = DateTimeLib.getNthDayOfWeekInMonthOfYear(year, month, n, wd);
         uint256 day = DateTimeLib.daysFromDate(year, month, 1);
         uint256 wd1 = (day + 3) % 7;
         uint256 diff;
@@ -252,12 +252,12 @@ contract DateTimeLibTest is TestPlus {
             diff = diff > 6 ? diff + 7 : diff;
         }
         console.log(wd1, diff, t);
-        // console.log(DateTimeLib.monthDays(year,month));
+        // console.log(DateTimeLib.getDaysInMonth(year,month));
         if (n == 0 || n > 5) {
             assertEq(t, 0);
         } else {
             uint256 date = diff + (n - 1) * 7 + 1;
-            uint256 md = DateTimeLib.monthDays(year, month);
+            uint256 md = DateTimeLib.getDaysInMonth(year, month);
             if (date > md) {
                 assertEq(t, 0);
             } else {
