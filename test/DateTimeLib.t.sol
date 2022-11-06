@@ -269,7 +269,9 @@ contract DateTimeLibTest is TestPlus {
         }
     }
 
-    function getNextWeekDay() public {
+    function testgetNextWeekDay() public {
+
+        assertEq(DateTimeLib.getNextWeekDay(0, 0), 345600);
         // 6 Novermber 2022 (1667692800) to next monday,Tuesday...,sunday
         assertEq(DateTimeLib.getNextWeekDay(1667692800, 0), 1667779200);
         assertEq(DateTimeLib.getNextWeekDay(1667692855, 1), 1667865600);
@@ -297,6 +299,7 @@ contract DateTimeLibTest is TestPlus {
                 difference = wd - currentweekday;
                 difference = (difference == 0 || difference > 6) ? difference + 7 : difference;
             }
+            console.log(difference);
             assertEq(DateTimeLib.getNextWeekDay(t, wd), ((t / 86400) + difference) * 86400);
         } else {
             assertEq(DateTimeLib.getNextWeekDay(t, wd), 0);
