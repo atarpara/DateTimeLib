@@ -1,0 +1,20 @@
+{
+  "name": "DateTimeLib",
+  "license": "MIT",
+  "version": "0.0.1",
+  "description": "Optimized Solidity library for date time.",
+  "files": [
+    "src/**/*.sol"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Atarpara/DateTimeLib.git"
+  },
+  "dependencies": {
+    "prettier": "^2.7.1",
+    "prettier-plugin-solidity": "^1.0.0-rc.1"
+  },
+  "scripts": {
+    "lint": "prettier --write **.sol"
+  }
+}

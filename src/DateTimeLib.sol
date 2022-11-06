@@ -44,7 +44,7 @@ library DateTimeLib {
             z := add(z, 719468)
             let era := div(z, 146097)
             let doe := mod(z, 146097)
-            let yoe := div(sub(add(doe, div(doe, 36524)), div(doe, 1460)), 365)
+            let yoe := div(sub(sub(add(doe, div(doe, 36524)), div(doe, 1460)),eq(doe,146096)), 365)
             let doy := add(sub(sub(doe, mul(365, yoe)), shr(2, yoe)), div(yoe, 100))
             let mp := div(add(mul(5, doy), 2), 153)
             day := add(sub(doy, shr(11, add(mul(mp, 62719), 769))), 1)
@@ -106,7 +106,7 @@ library DateTimeLib {
     }
 
     /// @dev Returns If given date is valid else false
-    /// valid range 1970 < year < 3.17*10^75, 0 < month < 13, 0 < day <= monthDays(y,m)
+    /// valid range 1970 < year < 3.669*10^69, 0 < month < 13, 0 < day <= monthDays(y,m)
     function isValidDate(
         uint256 y,
         uint256 m,
@@ -115,38 +115,42 @@ library DateTimeLib {
         uint256 md = monthDays(y, m);
         /// @solidity memory-safe-assembly
         assembly {
-            valid := iszero(or(or(or(or(or(lt(y, 1970),gt(y,317027972476686572410305440929486321699336700043506886628630523577932824464)),iszero(m)), gt(m, 12)), iszero(d)), gt(d, md)))
+            valid := iszero(or(or(or(or(or(lt(y, 1970),gt(y,3669305236998687180674831492239425019668248843096144521164705134005821)),iszero(m)), gt(m, 12)), iszero(d)), gt(d, md)))
         }
     }
 
     /// @dev Returns timestamp If the given nth weekday in month of year is possible else zero
-    /// @dev wd range is must be [0,6] where 0-Monday, 1-Tuesday,...., 6-Sunday
+    /// @dev wd range is must be [0,6] where 0-Monday, 1-Tuesday,...., 6-Sunday else undefined behaviours
     /// (Example) 2022-2 3th friday (getNthDayInMonthOfYear(2022,2,3,5))
+    /// @notice Doesn't verify year,month and weekday(wd) you can verify this via isValidDate(y,m,1)
     function getNthDayInMonthOfYear(
         uint256 y,
         uint256 m,
         uint256 n,
         uint256 wd
     ) internal pure returns (uint256 t) {
-        bool z = isValidDate(y,m,1);
         uint256 d = daysFromDate(y,m,1);
+        uint256 md = monthDays(y, m);
         assembly {
-            if iszero(iszero(z)) {
                 // weekday of 01-mm-yyyy w0 = (d + 3) % 7
                 // weekday diffrence x = (wd - w0) , x = x <= 6 ? x : x + 7
                 let diff := sub(wd, mod(add(d, 3), 7))
-                // date = x + (n-1)*7 + 1
-                let date := add(add(mul(sub(n, 1), 7), 1), add(diff, mul(gt(diff, 6), 7)))
-                // timestamp = 86400 * ((date - 1) + d)
-                t := mul(PER_DAY_SECOND, add(sub(date, 1), d))
+                // date = diff + (n-1)*7 + 1
+                // timestamp = 86400 * ((date - 1) + d) -> optimize ( 86400 * (diff + (n-1)*7) + d)
+                let date := add(mul(sub(n, 1), 7), add(mul(gt(diff, 6), 7),diff))
+                // timestamp = date > monthdays(y,m) ? 0 : (date + d)*86400
+                t := mul(mul(mul(PER_DAY_SECOND, add(date, d)),lt(date,md)),iszero(iszero(n)))
             }
-        }
+        
     }
 
     /// @dev Returns Next Weekday timestamp 
-    /// @notice wd range must be [0,6] (where 0-Monday, 1-Tuesday,...., 6-Sunday) else undefined behaviour 
+    /// @notice wd range must be [0,6] (where 0-Monday, 1-Tuesday,...., 6-Sunday) 
+    /// and timestamp range must be [0,115792089237316195423570985008687907853269984665640564039457584007913129084799]
+    /// else return 0
     function getNextWeekDay(uint256 t, uint256 wd) internal pure returns(uint256 _timestamp) {
         assembly {
+            if iszero(iszero(and(lt(t,0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffff78780),lt(wd,7)))){
             // days = t / 86400;
             let day := div(t,86400)
             // weekday of 01-mm-yyyy w0 = (d + 3) % 7
@@ -155,6 +159,7 @@ library DateTimeLib {
             // d := gt(diff,6) || iszero(diff) ? diff + 7 : diff
             let d := add(day,add(diff , mul(or(gt(diff,6),iszero(diff)),7)))
             _timestamp := mul(d,86400)
+            }
         }
     }
 }

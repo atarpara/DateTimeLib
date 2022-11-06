@@ -26,6 +26,10 @@ contract DateTimeLibTest is TestPlus {
         assertEq(DateTimeLib.daysFromDate(2355,12,31),140982);
         assertEq(DateTimeLib.daysFromDate(99999,12,31),35804721);
         assertEq(DateTimeLib.daysFromDate(100000,12,31),35805087);
+        assertEq(DateTimeLib.daysFromDate(604800,2,29),220179195);
+        assertEq(DateTimeLib.daysFromDate(1667347200,2,29),608985340227);
+        assertEq(DateTimeLib.daysFromDate(1667952000,2,29),609206238891);
+        
     }
 
     function testDaysToDate() public {
@@ -77,7 +81,6 @@ contract DateTimeLibTest is TestPlus {
     function testFuzzDaysFromDate(uint256 _y, uint256 _m, uint256 _d) public {
         // MAX POSSIBLE DAY = 115792089237316195423570985008687907853269984665640564039457584007913128920467
         // MAX DATE = 317027972476686572410305440929486321699336700043506886628630523577932824465 - 12 - 03
-        // _y = bound(_y,1970,317027972476686572410305440929486321699336700043506886628630523577932824464);
         vm.assume(DateTimeLib.isValidDate(_y,_m,_d));
         uint256 day = DateTimeLib.daysFromDate(_y,_m,_d);
         (uint256 y, uint256 m, uint256 d) = DateTimeLib.daysToDate(day);
@@ -196,11 +199,105 @@ contract DateTimeLibTest is TestPlus {
             if ( m > 0 && m < 13 && d > 0 && d < DateTimeLib.monthDays(y,m)) {
                 assertTrue(DateTimeLib.isValidDate(y,m,d));
             }
+        }else {
+            assertFalse(DateTimeLib.isValidDate(y,m,d));
         }
     }
 
     function testGetNthDayInMonthOfYear() public {
+        // get 1st 2nd 3rd 4th monday in Novermber 2022
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,1,0),1667779200);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,2,0),1668384000);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,3,0),1668988800);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,4,0),1669593600);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,5,0),0);
+
+        // get 1st... 5th Wednesday in Novermber 2022
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,1,2),1667347200);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,2,2),1667952000);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,3,2),1668556800);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,4,2),1669161600);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,5,2),1669766400);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,11,6,2),0);
+
+        // get 1st... 5th Friday in December 2022
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,12,1,4),1669939200);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,12,2,4),1670544000);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,12,3,4),1671148800);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,12,4,4),1671753600);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,12,5,4),1672358400);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2022,12,6,4),0);
+
+        // get 1st... 5th Sunday in January 2023
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023,1,1,6),1672531200);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023,1,2,6),1673136000);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023,1,3,6),1673740800);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023,1,4,6),1674345600);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023,1,5,6),1674950400);
+        assertEq(DateTimeLib.getNthDayInMonthOfYear(2023,1,6,6),0);
+    }
+
+    function testFuzzGetNthDayInMonthOfYear(uint256 year, uint256 month, uint256 n, uint256 wd) public {
+        wd = _bound(wd,0,6);
+        month = _bound(month,1,12);
         
+        year = _bound(year,1970,3669305236998687180674831492239425019668248843096144521164705134005821);
+        console.log(month,year);
+        uint256 t = DateTimeLib.getNthDayInMonthOfYear(year,month,n,wd);
+        uint256 day = DateTimeLib.daysFromDate(year,month,1);
+        uint256 wd1 = (day + 3 ) % 7;
+        uint256 diff;
+        unchecked{
+        diff = wd - wd1;
+        diff = diff > 6 ? diff + 7 : diff ;
+        }
+        console.log(wd1,diff,t);
+        // console.log(DateTimeLib.monthDays(year,month));
+        if (n == 0 || n > 5) {
+            assertEq(t,0);
+        }else {
+           uint256 date = diff + (n-1)*7 + 1;
+           uint256 md = DateTimeLib.monthDays(year,month);
+           if (date > md) {
+                assertEq(t,0);
+           }else {
+            assertEq(t,DateTimeLib.timestampFromDate(year,month,date));
+           }
+        }
+    }
+
+    function getNextWeekDay() public {
+        // 6 Novermber 2022 (1667692800) to next monday,Tuesday...,sunday
+        assertEq(DateTimeLib.getNextWeekDay(1667692800,0),1667779200);
+        assertEq(DateTimeLib.getNextWeekDay(1667692855,1),1667865600);
+        assertEq(DateTimeLib.getNextWeekDay(1667693000,2),1667952000);
+        assertEq(DateTimeLib.getNextWeekDay(1667693100,3),1668038400);
+        assertEq(DateTimeLib.getNextWeekDay(1667693186,4),1668124800);
+        assertEq(DateTimeLib.getNextWeekDay(1667693201,5),1668211200);
+        assertEq(DateTimeLib.getNextWeekDay(1667693264,6),1668297600);
+
+        // 30 January 2023 (1675036800) to next monday,Tuesday...,sunday
+        assertEq(DateTimeLib.getNextWeekDay(1675036800,0),1675641600);
+        assertEq(DateTimeLib.getNextWeekDay(1675036800,1),1675123200);
+        assertEq(DateTimeLib.getNextWeekDay(1675036800,2),1675209600);
+        assertEq(DateTimeLib.getNextWeekDay(1675036800,3),1675296000);
+        assertEq(DateTimeLib.getNextWeekDay(1675036800,4),1675382400);
+        assertEq(DateTimeLib.getNextWeekDay(1675036800,5),1675468800);
+        assertEq(DateTimeLib.getNextWeekDay(1675036800,6),1675555200);
+    }
+
+    function testFuzzGetNextWeekDay(uint256 t,uint256 wd) public {
+        if (t < 115792089237316195423570985008687907853269984665640564039457584007913129084800 && wd < 7) {
+            uint256 currentweekday = (t/86400 + 3) % 7;
+            uint256 difference;
+            unchecked {
+                difference = wd - currentweekday;
+                difference = (difference == 0 || difference > 6) ? difference + 7 : difference;
+            }
+            assertEq(DateTimeLib.getNextWeekDay(t,wd),((t/86400) + difference )*86400);
+        }else {
+            assertEq(DateTimeLib.getNextWeekDay(t,wd),0);
+        }
     }
 
 }
