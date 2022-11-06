@@ -1,4 +1,9 @@
 # DateTimeLib
+
+[![NPM][npm-shield]][npm-url]
+[![CI][ci-shield]][ci-url]
+[![MIT License][license-shield]][license-url]
+
 Gas-Efficient Solidity DateTime Library
 
 ## Conventions
@@ -152,3 +157,12 @@ This repository is inspired by or directly modified from many sources, primarily
 ## References
 
 A copy of the webpage with the algorithm [Date Time Algorithm](https://howardhinnant.github.io/date_algorithms.html).
+
+[npm-shield]: https://img.shields.io/npm/v/@atarpara/datetimelib.svg
+[npm-url]: https://www.npmjs.com/package/@atarpara/datetimelib
+
+[ci-shield]: https://img.shields.io/github/workflow/status/atarpara/datetimelib/ci?label=build
+[ci-url]: https://github.com/atarpara/datetimelib/actions/workflows/ci.yml
+
+[license-shield]: https://img.shields.io/badge/License-MIT-green.svg
+[license-url]: https://github.com/vectorized/solady/blob/main/LICENSE.txt

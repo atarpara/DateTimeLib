@@ -1,5 +1,5 @@
 {
-  "name": "DateTimeLib",
+  "name": "@atarpara/datetimelib",
   "license": "MIT",
   "version": "0.0.1",
   "description": "Optimized Solidity library for date time.",
@@ -16,5 +16,12 @@
   },
   "scripts": {
     "lint": "prettier --write **.sol"
-  }
+  },
+
+  "bugs": {
+    "url": "https://github.com/Atarpara/DateTimeLib/issues"
+  },
+
+  "homepage": "https://github.com/Atarpara/DateTimeLib#readme",
+  "author": "atarpara"
 }
