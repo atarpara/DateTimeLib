@@ -13,11 +13,7 @@ library DateTimeLib {
     /// https://howardhinnant.github.io/date_algorithms.html
     /// @notice doesn't validate date if date is before 1970-1-1 then this will give undefined behaviour
     /// you can validate date by isValidDate function
-    function daysFromDate(
-        uint256 y,
-        uint256 m,
-        uint256 d
-    ) internal pure returns (uint256 day) {
+    function daysFromDate(uint256 y, uint256 m, uint256 d) internal pure returns (uint256 day) {
         /// @solidity memory-safe-assembly
         assembly {
             y := sub(y, lt(m, 3))
@@ -30,21 +26,13 @@ library DateTimeLib {
     }
 
     /// @dev Returns year-month-day from the number of days since 1970-01-01
-    function daysToDate(uint256 z)
-        internal
-        pure
-        returns (
-            uint256 year,
-            uint256 month,
-            uint256 day
-        )
-    {
+    function daysToDate(uint256 z) internal pure returns (uint256 year, uint256 month, uint256 day) {
         /// @solidity memory-safe-assembly
         assembly {
             z := add(z, 719468)
             let era := div(z, 146097)
             let doe := mod(z, 146097)
-            let yoe := div(sub(sub(add(doe, div(doe, 36524)), div(doe, 1460)),eq(doe,146096)), 365)
+            let yoe := div(sub(sub(add(doe, div(doe, 36524)), div(doe, 1460)), eq(doe, 146096)), 365)
             let doy := add(sub(sub(doe, mul(365, yoe)), shr(2, yoe)), div(yoe, 100))
             let mp := div(add(mul(5, doy), 2), 153)
             day := add(sub(doy, shr(11, add(mul(mp, 62719), 769))), 1)
@@ -57,31 +45,19 @@ library DateTimeLib {
     function isLeapYear(uint256 y) internal pure returns (bool valid) {
         /// @solidity memory-safe-assembly
         assembly {
-            valid := and(iszero(and(y,0x03)),or(iszero(iszero(mod(y,100))),iszero(mod(y,400))))
+            valid := and(iszero(and(y, 0x03)), or(iszero(iszero(mod(y, 100))), iszero(mod(y, 400))))
         }
     }
 
     /// @dev Returns unix timestamp from given yyyy-m-d
     /// @notice doesn't validate date if date is before 1970-1-1 then this will give undefined behaviour
     /// you can validate date by isValidDate function
-    function timestampFromDate(
-        uint256 y,
-        uint256 m,
-        uint256 d
-    ) internal pure returns (uint256 timestamp) {
+    function timestampFromDate(uint256 y, uint256 m, uint256 d) internal pure returns (uint256 timestamp) {
         return daysFromDate(y, m, d) * PER_DAY_SECOND;
     }
 
     /// @dev Returns yyyy-m-d from the given timestamp
-    function timestampToDate(uint256 timestamp)
-        internal
-        pure
-        returns (
-            uint256 y,
-            uint256 m,
-            uint256 d
-        )
-    {
+    function timestampToDate(uint256 timestamp) internal pure returns (uint256 y, uint256 m, uint256 d) {
         (y, m, d) = daysToDate(timestamp / PER_DAY_SECOND);
     }
 
@@ -107,15 +83,14 @@ library DateTimeLib {
 
     /// @dev Returns If given date is valid else false
     /// valid range 1970 < year < 3.669*10^69, 0 < month < 13, 0 < day <= monthDays(y,m)
-    function isValidDate(
-        uint256 y,
-        uint256 m,
-        uint256 d
-    ) internal pure returns (bool valid) {
+    function isValidDate(uint256 y, uint256 m, uint256 d) internal pure returns (bool valid) {
         uint256 md = monthDays(y, m);
         /// @solidity memory-safe-assembly
         assembly {
-            valid := iszero(or(or(or(or(or(lt(y, 1970),gt(y,3669305236998687180674831492239425019668248843096144521164705134005821)),iszero(m)), gt(m, 12)), iszero(d)), gt(d, md)))
+            // prettier-ignore
+            valid := iszero(or(or(or(or(or(
+                    lt(y, 1970), gt(y, 3669305236998687180674831492239425019668248843096144521164705134005821)),
+                    iszero(m)),gt(m, 12)),iszero(d)),gt(d, md)))
         }
     }
 
@@ -123,42 +98,38 @@ library DateTimeLib {
     /// @dev wd range is must be [0,6] where 0-Monday, 1-Tuesday,...., 6-Sunday else undefined behaviours
     /// (Example) 2022-2 3th friday (getNthDayInMonthOfYear(2022,2,3,5))
     /// @notice Doesn't verify year,month and weekday(wd) you can verify this via isValidDate(y,m,1)
-    function getNthDayInMonthOfYear(
-        uint256 y,
-        uint256 m,
-        uint256 n,
-        uint256 wd
-    ) internal pure returns (uint256 t) {
-        uint256 d = daysFromDate(y,m,1);
+    function getNthDayInMonthOfYear(uint256 y, uint256 m, uint256 n, uint256 wd) internal pure returns (uint256 t) {
+        uint256 d = daysFromDate(y, m, 1);
         uint256 md = monthDays(y, m);
         assembly {
-                // weekday of 01-mm-yyyy w0 = (d + 3) % 7
-                // weekday diffrence x = (wd - w0) , x = x <= 6 ? x : x + 7
-                let diff := sub(wd, mod(add(d, 3), 7))
-                // date = diff + (n-1)*7 + 1
-                // timestamp = 86400 * ((date - 1) + d) -> optimize ( 86400 * (diff + (n-1)*7) + d)
-                let date := add(mul(sub(n, 1), 7), add(mul(gt(diff, 6), 7),diff))
-                // timestamp = date > monthdays(y,m) ? 0 : (date + d)*86400
-                t := mul(mul(mul(PER_DAY_SECOND, add(date, d)),lt(date,md)),iszero(iszero(n)))
-            }
-        
-    }
-
-    /// @dev Returns Next Weekday timestamp 
-    /// @notice wd range must be [0,6] (where 0-Monday, 1-Tuesday,...., 6-Sunday) 
-    /// and timestamp range must be [0,115792089237316195423570985008687907853269984665640564039457584007913129084799]
-    /// else return 0
-    function getNextWeekDay(uint256 t, uint256 wd) internal pure returns(uint256 _timestamp) {
-        assembly {
-            if iszero(iszero(and(lt(t,0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffff78780),lt(wd,7)))){
-            // days = t / 86400;
-            let day := div(t,86400)
             // weekday of 01-mm-yyyy w0 = (d + 3) % 7
             // weekday diffrence x = (wd - w0) , x = x <= 6 ? x : x + 7
-            let diff := sub(wd, mod(add(day,3), 7))
-            // d := gt(diff,6) || iszero(diff) ? diff + 7 : diff
-            let d := add(day,add(diff , mul(or(gt(diff,6),iszero(diff)),7)))
-            _timestamp := mul(d,86400)
+            let diff := sub(wd, mod(add(d, 3), 7))
+            // date = diff + (n-1)*7 + 1
+            // timestamp = 86400 * ((date - 1) + d) -> optimize ( 86400 * (diff + (n-1)*7) + d)
+            let date := add(mul(sub(n, 1), 7), add(mul(gt(diff, 6), 7), diff))
+            // timestamp = date > monthdays(y,m) ? 0 : (date + d)*86400
+            t := mul(mul(mul(PER_DAY_SECOND, add(date, d)), lt(date, md)), iszero(iszero(n)))
+        }
+    }
+
+    /// @dev Returns Next Weekday timestamp
+    /// @notice wd range must be [0,6] (where 0-Monday, 1-Tuesday,...., 6-Sunday)
+    /// and timestamp range must be [0,115792089237316195423570985008687907853269984665640564039457584007913129084799]
+    /// else return 0
+    function getNextWeekDay(uint256 t, uint256 wd) internal pure returns (uint256 _timestamp) {
+        assembly {
+            // prettier-ignore
+            if iszero(iszero(
+                and(lt(t, 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffff78780), lt(wd, 7)))) {
+                // days = t / 86400;
+                let day := div(t, 86400)
+                // weekday of 01-mm-yyyy w0 = (d + 3) % 7
+                // weekday diffrence x = (wd - w0) , x = x <= 6 ? x : x + 7
+                let diff := sub(wd, mod(add(day, 3), 7))
+                // d := gt(diff,6) || iszero(diff) ? diff + 7 : diff
+                let d := add(day, add(diff, mul(or(gt(diff, 6), iszero(diff)), 7)))
+                _timestamp := mul(d, 86400)
             }
         }
     }
