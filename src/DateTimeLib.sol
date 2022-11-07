@@ -6,7 +6,7 @@ library DateTimeLib {
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    uint256 internal constant PER_DAY_SECOND = 86400;
+    uint256 internal constant PER_DAY_SECONDS = 86400;
 
     /// @dev Returns days from 1970-01-01 to yyyy-mm-dd using
     /// date conversion algorithm from
@@ -46,7 +46,7 @@ library DateTimeLib {
     function isLeapYear(uint256 y) internal pure returns (bool valid) {
         /// @solidity memory-safe-assembly
         assembly {
-            valid := and(iszero(and(y, 0x03)), or(iszero(iszero(mod(y, 100))), iszero(mod(y, 400))))
+            valid := iszero(and(add(mul(iszero(mod(y, 25)), 12), 3), y))
         }
     }
 
@@ -54,22 +54,22 @@ library DateTimeLib {
     /// @notice doesn't validate date if date is before 1970-01-01 then this will give undefined behaviour
     /// you can validate date by isValidDate function
     function timestampFromDate(uint256 y, uint256 m, uint256 d) internal pure returns (uint256 timestamp) {
-        return daysFromDate(y, m, d) * PER_DAY_SECOND;
+        return daysFromDate(y, m, d) * PER_DAY_SECONDS;
     }
 
-    /// @dev Returns yyyy-m-d from the given timestamp
-    function timestampToDate(uint256 timestamp) internal pure returns (uint256 y, uint256 m, uint256 d) {
-        (y, m, d) = daysToDate(timestamp / PER_DAY_SECOND);
+    /// @dev Returns yyyy-mm-dd from the given timestamp
+    function timestampToDate(uint256 timestamp) internal pure returns (uint256 year, uint256 month, uint256 day) {
+        (year, month, day) = daysToDate(timestamp / PER_DAY_SECONDS);
     }
 
     /// @dev Returns number of days in given month of year
-    function getDaysInMonth(uint256 y, uint256 m) internal pure returns (uint256 d) {
-        bool flag = isLeapYear(y);
+    function getDaysInMonth(uint256 year, uint256 month) internal pure returns (uint256 day) {
+        bool isleap = isLeapYear(year);
         /// @solidity memory-safe-assembly
         assembly {
             // months[12] = [31,28,31,30,31,30,31,31,30,31,30,31]
             // day = month[m-1] + isLeapYear(y)
-            d := add(byte(m, shl(152, 0x1F1C1F1E1F1E1F1F1E1F1E1F)), and(eq(m, 2), flag))
+            day := add(byte(month, shl(152, 0x1F1C1F1E1F1E1F1F1E1F1E1F)), and(eq(month, 2), isleap))
         }
     }
 
@@ -78,20 +78,20 @@ library DateTimeLib {
     function getDayOfWeek(uint256 t) internal pure returns (uint256 weekday) {
         /// @solidity memory-safe-assembly
         assembly {
-            weekday := mod(add(div(t, PER_DAY_SECOND), 3), 7)
+            weekday := mod(add(div(t, PER_DAY_SECONDS), 3), 7)
         }
     }
 
     /// @dev Returns If given date is valid else false
     /// valid range 1970 < year < 3.669*10^69, 0 < month < 13, 0 < day <= getDaysInMonth(y,m)
-    function isValidDate(uint256 y, uint256 m, uint256 d) internal pure returns (bool valid) {
-        uint256 md = getDaysInMonth(y, m);
+    function isValidDate(uint256 year, uint256 month, uint256 day) internal pure returns (bool valid) {
+        uint256 md = getDaysInMonth(year, month);
         /// @solidity memory-safe-assembly
         assembly {
             // prettier-ignore
             valid := iszero(or(or(or(or(or(
-                    lt(y, 1970), gt(y, 3669305236998687180674831492239425019668248843096144521164705134005821)),
-                    iszero(m)),gt(m, 12)),iszero(d)),gt(d, md)))
+                    lt(year, 1970), gt(year, 3669305236998687180674831492239425019668248843096144521164705134005821)),
+                    iszero(month)), gt(month, 12)), iszero(day)), gt(day, md)))
         }
     }
 
@@ -99,7 +99,12 @@ library DateTimeLib {
     /// @dev wd range is must be [0,6] where 0-Monday, 1-Tuesday,...., 6-Sunday else undefined behaviours
     /// (Example) 2022-2 3th friday (getNthDayOfWeekInMonthOfYear(2022,2,3,5))
     /// @notice Doesn't verify year,month and weekday(wd) you can verify this via isValidDate(y,m,1)
-    function getNthDayOfWeekInMonthOfYear(uint256 y, uint256 m, uint256 n, uint256 wd) internal pure returns (uint256 t) {
+    function getNthDayOfWeekInMonthOfYear(
+        uint256 y,
+        uint256 m,
+        uint256 n,
+        uint256 wd
+    ) internal pure returns (uint256 t) {
         uint256 d = daysFromDate(y, m, 1);
         uint256 md = getDaysInMonth(y, m);
         assembly {
@@ -110,8 +115,7 @@ library DateTimeLib {
             // timestamp = 86400 * ((date - 1) + d) -> optimize ( 86400 * (diff + (n-1)*7) + d)
             let date := add(mul(sub(n, 1), 7), add(mul(gt(diff, 6), 7), diff))
             // timestamp = date > getDaysInMonth(y,m) ? 0 : (date + d)*86400
-            t := mul(mul(PER_DAY_SECOND, add(date, d)), and(lt(date, md), iszero(iszero(n))))
-
+            t := mul(mul(PER_DAY_SECONDS, add(date, d)), and(lt(date, md), iszero(iszero(n))))
         }
     }
 
@@ -132,6 +136,29 @@ library DateTimeLib {
                 // d := gt(diff,6) || iszero(diff) ? diff + 7 : diff
                 let d := add(day, add(diff, mul(or(gt(diff, 6), iszero(diff)), 7)))
                 _timestamp := mul(d, 86400)
+            }
+        }
+    }
+
+    /// @dev Return Monday timestamp of given timestamp week
+    /// @notice For less than 1970-01-04 timestamp start of week is Thursday
+    function getStartOfWeek(uint256 t) internal pure returns (uint256 _timestamp) {
+        assembly {
+            let day := div(t, 86400)
+            let weekday := mod(add(day, 3), 7)
+            _timestamp := mul(mul(sub(day, weekday), 86400), gt(t, 345599))
+        }
+    }
+
+    /// @dev Return Sunday timestamp of given timestamp week
+    /// @notice For greater than 3.66*10^69-12-31 timestamp end of week is Tuesday
+    function getEndOfWeek(uint256 t) internal pure returns (uint256 _timestamp) {
+        assembly {
+            let day := div(t, 86400)
+            let weekday := sub(6, mod(add(day, 3), 7))
+            _timestamp := mul(add(day, weekday), 86400)
+            if gt(t, 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffccd80) {
+                _timestamp := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7080
             }
         }
     }

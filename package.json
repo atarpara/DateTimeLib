@@ -17,11 +17,9 @@
   "scripts": {
     "lint": "prettier --write **.sol"
   },
-
   "bugs": {
     "url": "https://github.com/Atarpara/DateTimeLib/issues"
   },
-
   "homepage": "https://github.com/Atarpara/DateTimeLib#readme",
   "author": "atarpara"
 }
