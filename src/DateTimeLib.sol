@@ -296,7 +296,7 @@ library DateTimeLib {
     }
 
     /// @dev Returns the unix timestamp of the most recent Monday.
-    /// Note : If timestamp < 345600 it returns 0 as per UTC it thursday timestamp
+    /// Note : If timestamp < 345600 it returns 0 as per UTC it is thursday timestamp
     function mondayTimestamp(uint256 timestamp) internal pure returns (uint256 result) {
         uint256 t = timestamp;
         /// @solidity memory-safe-assembly
