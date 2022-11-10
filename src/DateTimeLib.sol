@@ -3,7 +3,6 @@ pragma solidity ^0.8.4;
 
 /// @notice Library for date time operations.
 /// @author Atarpara (https://github.com/Atarpara/DateTimeLib/blob/master/src/DateTimeLib.sol)
-/// @author modified form (https://github.com/vectorized/solady/blob/main/src/utils/DateTimeLib.sol)
 /// Conventions:
 /// --------------------------------------------------------------------+
 /// Unit      | Range                | Notes                            |

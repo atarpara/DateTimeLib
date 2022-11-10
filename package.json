@@ -1,7 +1,7 @@
 {
-  "name": "@atarpara/datetimelib",
+  "name": "solc-datetimelib",
   "license": "MIT",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Optimized Solidity library for date time.",
   "files": [
     "src/**/*.sol"
